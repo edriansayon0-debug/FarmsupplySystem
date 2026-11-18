@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1b4332"><title>S.T.P.B Farm Supplies & Equipment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<a class="brand" href="#"><span class="logo">♧</span><span><b>S.T.P.B Farm Supplies<br>& Equipment</b><small>FARM SUPPLY & EQ.</small></span></a>
+<p class="nav-label">WORKSPACE</p>
+<nav>
+<button class="nav active" data-page="dashboard">▦ <span>Dashboard</span></button>
+<button class="nav" data-page="products">▣ <span>Products</span></button>
+<button class="nav" data-page="customers">♙ <span>Customers</span></button>
+<button class="nav" data-page="transactions">▤ <span>Transactions</span></button>
+<button class="nav" data-page="inventory">▧ <span>Inventory</span></button>
+<button class="nav" data-page="reports">▥ <span>Reports</span></button>
+<button class="nav" data-page="users">♧ <span>Users</span></button>
+<button class="nav" data-page="settings">⚙ <span>Settings</span></button>
+</nav>
+<div class="user"><span class="avatar">ES</span><span><b>Edrian Sayon</b><small>System Admin</small></span><i></i></div>
+<small class="foot">S.T.P.B INTEGRATED FARMS CO.</small>
+</aside>
+<main>
+<header class="topbar">
+<div class="heading"><button id="menu" class="menu">☰</button><div><small>FARM SUPPLIES & EQUIPMENT</small><h1 id="title">Organization Profile & Overall Health</h1></div></div>
+<div class="actions"><label class="search">⌕ <input id="search" placeholder="Search anything here..."></label><button class="bell" id="bell">♧<i></i></button><div class="profile"><span class="avatar">ES</span><span><b>Edrian Sayon</b><small>Organization Admin</small></span>⌄</div></div>
+</header>
+<section class="content" id="content">
+<section class="org card"><div class="orglogo">♧</div><div class="orgbody">
+<div class="orgtop"><div><h2>Farm Supplies & Equipment</h2><p>S.T.P.B Integrated Farms Co. · Organization A</p></div><span class="activepill">● Active Organization</span></div>
+<div class="meta"><div><small>ORGANIZATION ADMIN</small><b>Edrian Sayon</b></div><div><small>BUSINESS UNIT</small><b>Farm Supplies & Equipment</b></div><div><small>LOCATION</small><b>Bacolod City, Philippines</b></div><div><small>STATUS</small><b>Operational</b></div></div>
+</div></section>
+<div class="sectiontitle"><div><h2>Organization Overview</h2><p>Monitor your farm supply operations at a glance.</p></div><button id="refresh" class="outline">↻ Refresh data</button></div>
+<section class="stats">
+<article class="card stat"><div>Total Products <span class="ico green">▣</span></div><strong>248</strong><small><em>+12</em> products this month</small></article>
+<article class="card stat"><div>Inventory Value <span class="ico blue">₱</span></div><strong>₱842,500</strong><small>Based on recorded stock</small></article>
+<article class="card stat"><div>Today's Sales <span class="ico gold">↗</span></div><strong>₱18,450</strong><small><em>+8.4%</em> from yesterday</small></article>
+<article class="card stat"><div>Low Stock Items <span class="ico red">!</span></div><strong>12</strong><small><b class="danger">Needs attention</b> · Reorder level</small></article>
+</section>
+<section class="grid">
+<article class="card panel"><div class="panelhead"><div><h3>Sales Performance</h3><p>Monthly sales overview</p></div><select id="period"><option>Last 7 months</option><option>Last 30 days</option><option>This year</option></select></div>
+<div class="sum"><strong>₱426,800</strong><em>↗ 12.8% vs. previous period</em></div>
+<div class="chart"><div class="yaxis"><span>₱100k</span><span>₱75k</span><span>₱50k</span><span>₱25k</span><span>₱0</span></div><div class="bars">
+<div><i style="height:43%"></i><small>May</small></div><div><i style="height:58%"></i><small>Jun</small></div><div><i style="height:49%"></i><small>Jul</small></div><div><i style="height:72%"></i><small>Aug</small></div><div><i style="height:64%"></i><small>Sep</small></div><div><i style="height:84%"></i><small>Oct</small></div><div><i class="current" style="height:95%"></i><small>Nov</small></div>
+</div></div></article>
+<article class="card panel stock"><div class="panelhead"><div><h3>Inventory Status</h3><p>Current stock condition</p></div><button class="link" data-goto="inventory">View inventory →</button></div>
+<div class="donut"><div><b>248</b><small>Total items</small></div></div>
+<div class="legend"><p><i class="in"></i>In stock <b>198</b></p><p><i class="low"></i>Low stock <b>38</b></p><p><i class="out"></i>Out of stock <b>12</b></p></div></article>
+</section>
+<section class="grid lower">
+<article class="card panel"><div class="panelhead"><div><h3>Recent Transactions</h3><p>Latest recorded sales</p></div><button class="link" data-goto="transactions">View all →</button></div>
+<div class="tablewrap"><table><thead><tr><th>REFERENCE</th><th>CUSTOMER</th><th>DATE</th><th>AMOUNT</th><th>STATUS</th></tr></thead><tbody>
+<tr><td class="ref">TRX-2026-0148</td><td>Juan Dela Cruz</td><td>Nov 18, 2026</td><td>₱4,500.00</td><td><span class="tag">Completed</span></td></tr>
+<tr><td class="ref">TRX-2026-0147</td><td>Maria Santos</td><td>Nov 18, 2026</td><td>₱2,850.00</td><td><span class="tag">Completed</span></td></tr>
+<tr><td class="ref">TRX-2026-0146</td><td>Pedro Reyes</td><td>Nov 17, 2026</td><td>₱8,200.00</td><td><span class="pending">Pending</span></td></tr>
+<tr><td class="ref">TRX-2026-0145</td><td>Ana Lopez</td><td>Nov 17, 2026</td><td>₱1,750.00</td><td><span class="tag">Completed</span></td></tr>
+</tbody></table></div></article>
+<article class="card panel alerts"><div class="panelhead"><div><h3>Low Stock Alerts</h3><p>Products that need restocking</p></div><span class="count">3 shown</span></div>
+<div class="alert"><span>🌱</span><div><b>Organic Fertilizer 5kg</b><small>SKU: FRT-005 · 4 bags left</small></div><strong class="danger">4</strong></div>
+<div class="alert"><span>🧰</span><div><b>Garden Hand Trowel</b><small>SKU: TLS-021 · 6 pcs left</small></div><strong class="warn">6</strong></div>
+<div class="alert"><span>💧</span><div><b>Watering Hose 20m</b><small>SKU: EQP-014 · 3 rolls left</small></div><strong class="danger">3</strong></div>
+<button class="soft full" data-goto="inventory">Review stock alerts</button></article>
+</section>
+<footer>© 2026 S.T.P.B Integrated Farms Co. <span>Farm Supplies & Equipment Management System</span></footer>
+</section>
+</main></div><div class="toast" id="toast"></div><script src="app.js"></script></body></html>
