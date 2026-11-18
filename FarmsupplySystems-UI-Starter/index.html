@@ -68,4 +68,72 @@
 </section>
 <footer>© 2026 S.T.P.B Integrated Farms Co. <span>Farm Supplies & Equipment Management System</span></footer>
 </section>
-</main></div><div class="toast" id="toast"></div><script src="app.js"></script></body></html>
+
+</main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- LOGIN SCREEN -->
+<section class="auth-screen" id="authScreen">
+  <form class="auth-card" id="loginForm">
+
+    <div class="auth-brand">
+      <span class="logo">♧</span>
+      <span>
+        <b>S.T.P.B Farm Supplies<br>& Equipment</b>
+        <small>FARM SUPPLY & EQ.</small>
+      </span>
+    </div>
+
+    <p class="auth-kicker">SECURE ORGANIZATION ACCESS</p>
+
+    <h1>Welcome back</h1>
+    <p class="auth-description">
+      Sign in using your authorized administrator account.
+    </p>
+
+    <label class="auth-label" for="loginEmail">
+      Email address
+    </label>
+    <input
+      class="auth-input"
+      id="loginEmail"
+      type="email"
+      placeholder="Enter your email"
+      autocomplete="username"
+      required
+    >
+
+    <label class="auth-label" for="loginPassword">
+      Password
+    </label>
+    <input
+      class="auth-input"
+      id="loginPassword"
+      type="password"
+      placeholder="Enter your password"
+      autocomplete="current-password"
+      required
+    >
+
+    <button class="auth-submit" id="loginSubmit" type="submit">
+      Sign in
+    </button>
+
+    <button class="auth-forgot" id="forgotPassword" type="button">
+      Forgot password?
+    </button>
+
+    <p class="auth-message" id="authMessage" role="status"></p>
+
+    <p class="auth-foot">
+      Access is limited to authorized S.T.P.B personnel.
+    </p>
+
+  </form>
+</section>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
