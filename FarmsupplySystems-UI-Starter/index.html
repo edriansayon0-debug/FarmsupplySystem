@@ -22,13 +22,31 @@
 <button class="nav" data-page="users">♧ <span>Users</span></button>
 <button class="nav" data-page="settings">⚙ <span>Settings</span></button>
 </nav>
-<div class="user"><span class="avatar">ES</span><span><b>Edrian Sayon</b><small>System Admin</small></span><i></i></div>
+<div class="user">
+  <span class="avatar" id="sidebarAvatar">ST</span>
+  <span>
+    <b id="sidebarUserName">Account</b>
+    <small id="sidebarUserRole">Signed in</small>
+  </span>
+  <i></i>
+</div>
 <small class="foot">S.T.P.B INTEGRATED FARMS CO.</small>
 </aside>
 <main>
 <header class="topbar">
 <div class="heading"><button id="menu" class="menu">☰</button><div><small>FARM SUPPLIES & EQUIPMENT</small><h1 id="title">Organization Profile & Overall Health</h1></div></div>
-<div class="actions"><label class="search">⌕ <input id="search" placeholder="Search anything here..."></label><button class="bell" id="bell">♧<i></i></button><div class="profile"><span class="avatar">ES</span><span><b>Edrian Sayon</b><small>Organization Admin</small></span>⌄</div></div>
+<div class="actions"><label class="search">⌕ <input id="search" placeholder="Search anything here..."></label><button class="bell" id="bell">♧<i></i></button><button class="profile" id="signOutButton" type="button"
+  style="border:0;background:transparent;cursor:pointer;color:inherit;font:inherit">
+
+  <span class="avatar" id="headerAvatar">ST</span>
+
+  <span>
+    <b id="headerUserName">Account</b>
+    <small id="headerUserRole">Signed in</small>
+  </span>
+
+  ↪
+</button></div>
 </header>
 <section class="content" id="content">
 <section class="org card"><div class="orglogo">♧</div><div class="orgbody">
