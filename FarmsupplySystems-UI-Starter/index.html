@@ -108,6 +108,7 @@
 
 <div class="toast" id="toast"></div>
 
+
 <!-- LOGIN SCREEN -->
 <section class="auth-screen" id="authScreen">
   <form class="auth-card" id="loginForm">
@@ -120,36 +121,37 @@
       </span>
     </div>
 
-    <p class="auth-kicker">SECURE ORGANIZATION ACCESS</p>
+    <p class="auth-kicker">SECURE ACCOUNT ACCESS</p>
 
-    <h1>Welcome back</h1>
-    <p class="auth-description">
-      Sign in using your authorized administrator account.
+    <h1 id="loginTitle">Welcome back</h1>
+    <p class="auth-description" id="loginDescription">
+      Sign in to your administrator account.
     </p>
+
+    <div style="display:flex;gap:10px;margin-bottom:20px">
+      <button type="button" id="adminLoginTab"
+        class="auth-submit" style="flex:1">
+        Administrator
+      </button>
+      <button type="button" id="customerLoginTab"
+        class="auth-submit" style="flex:1;background:#e8eee9;color:#1b4332">
+        Customer
+      </button>
+    </div>
 
     <label class="auth-label" for="loginEmail">
       Email address
     </label>
-    <input
-      class="auth-input"
-      id="loginEmail"
-      type="email"
-      placeholder="Enter your email"
-      autocomplete="username"
-      required
-    >
+    <input class="auth-input" id="loginEmail"
+      type="email" placeholder="Enter your email"
+      autocomplete="username" required>
 
     <label class="auth-label" for="loginPassword">
       Password
     </label>
-    <input
-      class="auth-input"
-      id="loginPassword"
-      type="password"
-      placeholder="Enter your password"
-      autocomplete="current-password"
-      required
-    >
+    <input class="auth-input" id="loginPassword"
+      type="password" placeholder="Enter your password"
+      autocomplete="current-password" required>
 
     <button class="auth-submit" id="loginSubmit" type="submit">
       Sign in
@@ -161,12 +163,36 @@
 
     <p class="auth-message" id="authMessage" role="status"></p>
 
-    <p class="auth-foot">
+    <p class="auth-foot" id="loginFooter">
       Access is limited to authorized S.T.P.B personnel.
     </p>
 
   </form>
 </section>
+
+<!-- CUSTOMER SCREEN -->
+<section id="customerScreen" style="display:none;min-height:100vh;background:#f5f7f4;padding:25px">
+  <header style="display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap">
+    <div>
+      <h2 style="color:#1b4332;margin:0">S.T.P.B Farm Supplies</h2>
+      <p style="margin:5px 0;color:#777">Customer Shopping Portal</p>
+    </div>
+    <div>
+      <span id="customerName">Customer</span>
+      <button id="customerSignOut" type="button">Sign out</button>
+    </div>
+  </header>
+
+  <main style="max-width:1100px;margin:35px auto">
+    <h1>Available Products</h1>
+    <p>Browse our farm supplies and equipment.</p>
+
+    <div id="customerProducts">
+      <p>Loading products...</p>
+    </div>
+  </main>
+</section>
+
 
 <script type="module" src="app.js"></script>
 <script type="module" src="auth.js"></script>
