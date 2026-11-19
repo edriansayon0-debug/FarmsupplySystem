@@ -26,7 +26,12 @@ const customerName = document.getElementById("customerName");
 const customerProducts = document.getElementById("customerProducts");
 const customerSignOut = document.getElementById("customerSignOut");
 
+const ORGANIZATION_ID = "4e762e56-2d6c-468d-a50b-6c009e700064";
+
 let loginMode = "admin";
+let currentCustomer = null;
+let availableProducts = [];
+let customerCart = new Map();
 
 // ==========================================
 // SCREEN MANAGEMENT
@@ -84,13 +89,17 @@ function showDashboard(user, profile) {
 }
 
 function showCustomer(profile) {
+  currentCustomer = profile;
+
   authScreen.style.display = "none";
   app.style.display = "none";
   customerScreen.style.display = "block";
 
   customerName.textContent = profile.full_name || "Customer";
 
+  createCartElements();
   loadCustomerProducts();
+  renderCart();
 }
 
 function showMessage(message, success = false) {
@@ -206,9 +215,30 @@ async function loadCustomerProfile(user) {
 // ROUTE AUTHENTICATED USER
 // ==========================================
 
-async function loadUserAndOpenScreen(user) {
+async function loadUserAndOpenScreen(user, preferredMode = null) {
   try {
-    // Check administrator account first
+    if (preferredMode === "customer") {
+      const customerProfile = await loadCustomerProfile(user);
+
+      if (!customerProfile) {
+        throw new Error("No customer profile was found for this account.");
+      }
+
+      showCustomer(customerProfile);
+      return true;
+    }
+
+    if (preferredMode === "admin") {
+      const adminProfile = await loadAdminProfile(user);
+
+      if (!adminProfile) {
+        throw new Error("No administrator profile was found for this account.");
+      }
+
+      showDashboard(user, adminProfile);
+      return true;
+    }
+
     const adminProfile = await loadAdminProfile(user);
 
     if (adminProfile) {
@@ -216,7 +246,6 @@ async function loadUserAndOpenScreen(user) {
       return true;
     }
 
-    // If no administrator profile exists, check customer profile
     const customerProfile = await loadCustomerProfile(user);
 
     if (customerProfile) {
@@ -224,22 +253,14 @@ async function loadUserAndOpenScreen(user) {
       return true;
     }
 
-    await supabase.auth.signOut();
-
-    showLogin();
-
-    showMessage(
+    throw new Error(
       "No authorized administrator or customer profile was found for this account."
     );
 
-    return false;
-
   } catch (error) {
     await supabase.auth.signOut();
-
     showLogin();
     showMessage(error.message);
-
     return false;
   }
 }
@@ -269,7 +290,7 @@ loginForm.addEventListener("submit", async (event) => {
       throw error;
     }
 
-    const success = await loadUserAndOpenScreen(data.user);
+    const success = await loadUserAndOpenScreen(data.user, loginMode);
 
     if (success) {
       loginForm.reset();
@@ -296,22 +317,23 @@ async function loadCustomerProducts() {
     .select(
       "id, product_name, description, price, stock_quantity, unit, image_url"
     )
-    .eq("organization_id", "4e762e56-2d6c-468d-a50b-6c009e700064")
+    .eq("organization_id", ORGANIZATION_ID)
     .eq("is_active", true)
     .order("product_name");
 
   if (error) {
     customerProducts.textContent =
       "Unable to load products. Please try again later.";
-
     console.error("Product loading error:", error);
     return;
   }
 
+  availableProducts = products || [];
   customerProducts.replaceChildren();
 
-  if (!products || products.length === 0) {
+  if (availableProducts.length === 0) {
     customerProducts.textContent = "No products are currently available.";
+    renderCart();
     return;
   }
 
@@ -322,7 +344,7 @@ async function loadCustomerProducts() {
     "repeat(auto-fit, minmax(220px, 1fr))";
   grid.style.gap = "18px";
 
-  products.forEach((product) => {
+  availableProducts.forEach((product) => {
     const card = document.createElement("article");
 
     card.style.background = "#ffffff";
@@ -338,12 +360,7 @@ async function loadCustomerProducts() {
       product.description || "No description available.";
 
     const price = document.createElement("strong");
-    price.textContent =
-      "₱" + Number(product.price).toLocaleString("en-PH", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-
+    price.textContent = formatMoney(product.price);
     price.style.color = "#1b4332";
 
     const stock = document.createElement("p");
@@ -353,12 +370,434 @@ async function loadCustomerProducts() {
       " " +
       (product.unit || "piece");
 
-    card.append(name, description, price, stock);
+    const addButton = document.createElement("button");
+    addButton.type = "button";
+    addButton.textContent =
+      Number(product.stock_quantity) > 0
+        ? "Add to Cart"
+        : "Out of Stock";
 
+    addButton.disabled = Number(product.stock_quantity) <= 0;
+    addButton.addEventListener("click", () => addToCart(product.id));
+
+    card.append(name, description, price, stock, addButton);
     grid.appendChild(card);
   });
 
   customerProducts.appendChild(grid);
+  renderCart();
+}
+
+// ==========================================
+// SHOPPING CART
+// ==========================================
+
+function formatMoney(amount) {
+  return "₱" + Number(amount || 0).toLocaleString("en-PH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function createCartElements() {
+  if (document.getElementById("customerCartToolbar")) return;
+
+  const style = document.createElement("style");
+  style.textContent = `
+    .cart-action-button {
+      background: #1b4332;
+      color: white;
+      border: 0;
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .cart-panel {
+      display: none;
+      background: white;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      margin: 15px 0;
+    }
+    .cart-panel.open { display: block; }
+    .cart-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .cart-qty-button {
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    .checkout-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #0008;
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+    }
+    .checkout-overlay.open { display: flex; }
+    .checkout-box {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      width: min(100%, 500px);
+      max-height: 90vh;
+      overflow: auto;
+    }
+    .checkout-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      margin: 5px 0 12px;
+    }
+  `;
+  document.head.appendChild(style);
+
+  const toolbar = document.createElement("div");
+  toolbar.id = "customerCartToolbar";
+  toolbar.style.textAlign = "right";
+  toolbar.style.margin = "20px 0";
+
+  const cartButton = document.createElement("button");
+  cartButton.type = "button";
+  cartButton.className = "cart-action-button";
+  cartButton.id = "toggleCustomerCart";
+  cartButton.textContent = "Shopping Cart (0)";
+
+  cartButton.addEventListener("click", () => {
+    document.getElementById("customerCartPanel")
+      .classList.toggle("open");
+  });
+
+  toolbar.appendChild(cartButton);
+  customerProducts.parentElement.insertBefore(toolbar, customerProducts);
+
+  const panel = document.createElement("section");
+  panel.id = "customerCartPanel";
+  panel.className = "cart-panel";
+
+  panel.innerHTML = `
+    <h2>Your Shopping Cart</h2>
+    <div id="customerCartItems"></div>
+    <h3>Total: <span id="customerCartTotal">₱0.00</span></h3>
+    <button type="button" class="cart-action-button"
+      id="customerCheckoutButton">
+      Proceed to Checkout
+    </button>
+  `;
+
+  toolbar.insertAdjacentElement("afterend", panel);
+
+  document.getElementById("customerCheckoutButton")
+    .addEventListener("click", openCheckout);
+
+  const modal = document.createElement("div");
+  modal.id = "customerCheckoutModal";
+  modal.className = "checkout-overlay";
+
+  modal.innerHTML = `
+    <div class="checkout-box">
+      <h2>Checkout</h2>
+      <p id="checkoutSummary"></p>
+
+      <label>Fulfillment Method</label>
+      <select id="checkoutFulfillment" class="checkout-input">
+        <option value="delivery">Delivery</option>
+        <option value="pickup">Pay upon Pickup</option>
+      </select>
+
+      <label>Payment Method</label>
+      <input id="checkoutPayment" class="checkout-input"
+        value="Cash on Delivery" readonly>
+
+      <label id="checkoutAddressLabel">Delivery Address</label>
+      <textarea id="checkoutAddress" class="checkout-input"
+        rows="3" placeholder="Enter your complete address"></textarea>
+
+      <label>Order Notes (Optional)</label>
+      <textarea id="checkoutNotes" class="checkout-input"
+        rows="2"></textarea>
+
+      <p id="checkoutMessage"></p>
+
+      <button type="button" id="cancelCheckout">
+        Back to Cart
+      </button>
+
+      <button type="button" class="cart-action-button"
+        id="placeCustomerOrder">
+        Place Order
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  document.getElementById("cancelCheckout")
+    .addEventListener("click", closeCheckout);
+
+  document.getElementById("placeCustomerOrder")
+    .addEventListener("click", submitCustomerOrder);
+
+  document.getElementById("checkoutFulfillment")
+    .addEventListener("change", updateCheckoutFields);
+}
+
+function getCartTotal() {
+  let total = 0;
+
+  customerCart.forEach(({ product, quantity }) => {
+    total += Number(product.price) * quantity;
+  });
+
+  return total;
+}
+
+function addToCart(productId) {
+  const product = availableProducts.find(
+    item => item.id === productId
+  );
+
+  if (!product) return;
+
+  const existing = customerCart.get(productId);
+  const quantity = existing ? existing.quantity : 0;
+
+  if (quantity >= Number(product.stock_quantity)) {
+    alert("You cannot add more than the available stock.");
+    return;
+  }
+
+  customerCart.set(productId, {
+    product,
+    quantity: quantity + 1
+  });
+
+  renderCart();
+}
+
+function changeCartQuantity(productId, change) {
+  const item = customerCart.get(productId);
+  if (!item) return;
+
+  const newQuantity = item.quantity + change;
+
+  if (newQuantity <= 0) {
+    customerCart.delete(productId);
+  } else if (newQuantity > Number(item.product.stock_quantity)) {
+    alert("Requested quantity exceeds available stock.");
+    return;
+  } else {
+    item.quantity = newQuantity;
+  }
+
+  renderCart();
+}
+
+function removeFromCart(productId) {
+  customerCart.delete(productId);
+  renderCart();
+}
+
+function renderCart() {
+  const panel = document.getElementById("customerCartPanel");
+  if (!panel) return;
+
+  const count = Array.from(customerCart.values())
+    .reduce((sum, item) => sum + item.quantity, 0);
+
+  document.getElementById("toggleCustomerCart").textContent =
+    `Shopping Cart (${count})`;
+
+  document.getElementById("customerCartTotal").textContent =
+    formatMoney(getCartTotal());
+
+  const container = document.getElementById("customerCartItems");
+  container.replaceChildren();
+
+  if (customerCart.size === 0) {
+    container.textContent = "Your cart is empty.";
+    document.getElementById("customerCheckoutButton").disabled = true;
+    return;
+  }
+
+  document.getElementById("customerCheckoutButton").disabled = false;
+
+  customerCart.forEach(({ product, quantity }) => {
+    const line = document.createElement("div");
+    line.className = "cart-line";
+
+    const info = document.createElement("div");
+    info.textContent =
+      `${product.product_name} — ${formatMoney(product.price)} each`;
+
+    const controls = document.createElement("div");
+
+    const minus = document.createElement("button");
+    minus.className = "cart-qty-button";
+    minus.textContent = "−";
+    minus.addEventListener("click", () =>
+      changeCartQuantity(product.id, -1)
+    );
+
+    const qty = document.createElement("span");
+    qty.textContent = ` ${quantity} `;
+
+    const plus = document.createElement("button");
+    plus.className = "cart-qty-button";
+    plus.textContent = "+";
+    plus.disabled = quantity >= Number(product.stock_quantity);
+    plus.addEventListener("click", () =>
+      changeCartQuantity(product.id, 1)
+    );
+
+    const subtotal = document.createElement("strong");
+    subtotal.textContent =
+      ` ${formatMoney(Number(product.price) * quantity)} `;
+
+    const remove = document.createElement("button");
+    remove.textContent = "Remove";
+    remove.addEventListener("click", () =>
+      removeFromCart(product.id)
+    );
+
+    controls.append(minus, qty, plus, subtotal, remove);
+    line.append(info, controls);
+    container.appendChild(line);
+  });
+}
+
+// ==========================================
+// CHECKOUT
+// ==========================================
+
+function openCheckout() {
+  if (customerCart.size === 0) return;
+
+  const summary = Array.from(customerCart.values())
+    .map(({ product, quantity }) =>
+      `${product.product_name} × ${quantity}`
+    )
+    .join(", ");
+
+  document.getElementById("checkoutSummary").textContent =
+    `${summary} | Total: ${formatMoney(getCartTotal())}`;
+
+  document.getElementById("checkoutMessage").textContent = "";
+  document.getElementById("checkoutFulfillment").value = "delivery";
+  document.getElementById("checkoutAddress").value = "";
+  document.getElementById("checkoutNotes").value = "";
+
+  updateCheckoutFields();
+
+  document.getElementById("customerCheckoutModal")
+    .classList.add("open");
+}
+
+function closeCheckout() {
+  document.getElementById("customerCheckoutModal")
+    .classList.remove("open");
+}
+
+function updateCheckoutFields() {
+  const fulfillment =
+    document.getElementById("checkoutFulfillment").value;
+
+  const address = document.getElementById("checkoutAddress");
+  const label = document.getElementById("checkoutAddressLabel");
+  const payment = document.getElementById("checkoutPayment");
+
+  if (fulfillment === "pickup") {
+    label.style.display = "none";
+    address.style.display = "none";
+    address.required = false;
+    address.value = "";
+    payment.value = "Pay upon Pickup";
+  } else {
+    label.style.display = "block";
+    address.style.display = "block";
+    address.required = true;
+    payment.value = "Cash on Delivery";
+  }
+}
+
+async function submitCustomerOrder() {
+  if (customerCart.size === 0) return;
+
+  const button = document.getElementById("placeCustomerOrder");
+  const message = document.getElementById("checkoutMessage");
+
+  const fulfillment =
+    document.getElementById("checkoutFulfillment").value;
+
+  const address =
+    document.getElementById("checkoutAddress").value.trim();
+
+  const notes =
+    document.getElementById("checkoutNotes").value.trim();
+
+ const paymentMethod =
+  fulfillment === "pickup"
+    ? "pay_upon_pickup"
+    : "cash_on_delivery";
+
+  if (fulfillment === "delivery" && !address) {
+    message.textContent = "Please enter your delivery address.";
+    return;
+  }
+
+  const items = Array.from(customerCart.values()).map(
+    ({ product, quantity }) => ({
+      product_id: product.id,
+      quantity
+    })
+  );
+
+  button.disabled = true;
+  button.textContent = "Placing Order...";
+
+  try {
+    const { data, error } = await supabase.rpc(
+      "place_customer_order",
+      {
+        p_items: items,
+        p_fulfillment_method: fulfillment,
+        p_payment_method: paymentMethod,
+        p_delivery_address:
+          fulfillment === "delivery" ? address : null,
+        p_customer_notes: notes || null
+      }
+    );
+
+    if (error) throw error;
+
+    customerCart.clear();
+    renderCart();
+    closeCheckout();
+
+    alert(
+      "Your order was successfully placed. Reference: " +
+      (typeof data === "string" ? data : JSON.stringify(data)) +
+      ". Payment status: Unpaid."
+    );
+
+    await loadCustomerProducts();
+
+  } catch (error) {
+    console.error("Order placement error:", error);
+    message.textContent = error.message ||
+      "Unable to place your order. Please try again.";
+  } finally {
+    button.disabled = false;
+    button.textContent = "Place Order";
+  }
 }
 
 // ==========================================
@@ -395,6 +834,9 @@ async function signOutUser(button) {
 
   if (error) {
     showMessage(error.message);
+  } else {
+    customerCart.clear();
+    currentCustomer = null;
   }
 }
 
@@ -418,6 +860,9 @@ if (customerSignOut) {
 
 supabase.auth.onAuthStateChange((event) => {
   if (event === "SIGNED_OUT") {
+    customerCart.clear();
+    currentCustomer = null;
+
     showLogin();
     loginForm.reset();
     showMessage("You have been signed out.");
