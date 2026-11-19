@@ -34,14 +34,15 @@ function showDashboard(user, profile) {
 
   const roleName = roleLabels[profile.role];
 
-  const userDetails = {
-    sidebarUserName: name,
-    headerUserName: name,
-    sidebarUserRole: roleName,
-    headerUserRole: roleName,
-    sidebarAvatar: name.substring(0, 2).toUpperCase(),
-    headerAvatar: name.substring(0, 2).toUpperCase()
-  };
+const userDetails = {
+  sidebarUserName: name,
+  headerUserName: name,
+  sidebarUserRole: roleName,
+  headerUserRole: roleName,
+  sidebarAvatar: name.substring(0, 2).toUpperCase(),
+  headerAvatar: name.substring(0, 2).toUpperCase(),
+  organizationCardRole: roleName
+};
 
   Object.entries(userDetails).forEach(([id, value]) => {
     const element = document.getElementById(id);
