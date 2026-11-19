@@ -15,34 +15,91 @@ function showLogin() {
   app.style.display = "none";
 }
 
-function showDashboard(user) {
+function showDashboard(user, profile) {
   authScreen.style.display = "none";
   app.style.display = "flex";
 
   const name =
+    profile.full_name ||
     user.user_metadata?.full_name ||
     user.user_metadata?.display_name ||
     user.email?.split("@")[0] ||
     "Account";
 
-  const profile = {
+  const roleLabels = {
+    super_admin: "Super Admin",
+    organization_admin: "Organization Admin",
+    staff: "Staff"
+  };
+
+  const roleName = roleLabels[profile.role];
+
+  const userDetails = {
     sidebarUserName: name,
     headerUserName: name,
-    sidebarUserRole: "Organization Admin",
-    headerUserRole: "Organization Admin",
+    sidebarUserRole: roleName,
+    headerUserRole: roleName,
     sidebarAvatar: name.substring(0, 2).toUpperCase(),
     headerAvatar: name.substring(0, 2).toUpperCase()
   };
 
-  Object.entries(profile).forEach(([id, value]) => {
+  Object.entries(userDetails).forEach(([id, value]) => {
     const element = document.getElementById(id);
-    if (element) element.textContent = value;
+
+    if (element) {
+      element.textContent = value;
+    }
   });
 }
 
 function showMessage(message, success = false) {
   authMessage.textContent = message;
   authMessage.style.color = success ? "#2d8a50" : "#c0392b";
+}
+
+// LOAD AND VALIDATE USER PROFILE
+async function loadProfileAndShowDashboard(user) {
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("full_name, role, is_active")
+    .eq("id", user.id)
+    .single();
+
+  if (error || !profile) {
+    await supabase.auth.signOut();
+    showLogin();
+    showMessage(
+      "Unable to load your account profile. Please contact the system administrator."
+    );
+    return false;
+  }
+
+  if (!profile.is_active) {
+    await supabase.auth.signOut();
+    showLogin();
+    showMessage(
+      "Your account is inactive. Please contact the system administrator."
+    );
+    return false;
+  }
+
+  const allowedRoles = [
+    "super_admin",
+    "organization_admin",
+    "staff"
+  ];
+
+  if (!allowedRoles.includes(profile.role)) {
+    await supabase.auth.signOut();
+    showLogin();
+    showMessage(
+      "Your account has an invalid role. Please contact the system administrator."
+    );
+    return false;
+  }
+
+  showDashboard(user, profile);
+  return true;
 }
 
 // LOGIN
@@ -64,7 +121,8 @@ loginForm.addEventListener("submit", async (event) => {
 
     if (error) throw error;
 
-    showDashboard(data.user);
+    await loadProfileAndShowDashboard(data.user);
+
     loginForm.reset();
 
   } catch (error) {
@@ -88,18 +146,14 @@ async function checkSession() {
   }
 
   if (data.session) {
-    showDashboard(data.session.user);
+    await loadProfileAndShowDashboard(data.session.user);
   } else {
     showLogin();
   }
 }
 
-// MONITOR AUTHENTICATION
-supabase.auth.onAuthStateChange((event, session) => {
-  if (event === "SIGNED_IN" && session) {
-    showDashboard(session.user);
-  }
-
+// MONITOR SIGN OUT
+supabase.auth.onAuthStateChange((event) => {
   if (event === "SIGNED_OUT") {
     showLogin();
     loginForm.reset();
@@ -118,7 +172,9 @@ if (signOutButton) {
 
     signOutButton.disabled = false;
 
-    if (error) showMessage(error.message);
+    if (error) {
+      showMessage(error.message);
+    }
   });
 }
 
